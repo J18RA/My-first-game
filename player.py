@@ -34,7 +34,7 @@ class Player(pygame.sprite.Sprite):
         self.invincible_timer = 0
         self.is_visible = True  # The player's visibility (for blinking)
 
-    def update(self):
+    def update(self, platforms):
         # Updating the timer of invulnerability
         if self.invincible_timer > 0:
             self.invincible_timer -= 1
@@ -60,6 +60,15 @@ class Player(pygame.sprite.Sprite):
         # Gravity
         self.velocity_y += self.gravity
         self.rect.y += self.velocity_y
+
+        # Check for collisions with platforms
+        for platform in platforms:
+            if self.velocity_y > 0:  # Falling
+                if (self.rect.colliderect(platform["rect"]) and
+                        self.rect.bottom <= platform["rect"].top + self.velocity_y + 1):
+                    self.rect.bottom = platform["rect"].top
+                    self.velocity_y = 0
+                    self.is_jumping = False
 
         # Collision checking with ground
         if self.rect.bottom >= GROUND_LEVEL:

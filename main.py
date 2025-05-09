@@ -1,6 +1,6 @@
 import pygame
 import sys
-from settings import WIDTH, HEIGHT, load_backgrounds
+from settings import WIDTH, HEIGHT, load_backgrounds, load_landscape
 from player import Player
 from enemies import Enemy
 from camera import Camera
@@ -15,7 +15,10 @@ sky_background = backgrounds["sky"]
 mountains_background = backgrounds["mountains"]
 clouds_background = backgrounds["clouds"]
 trees_background = backgrounds["trees"]
-ground_background = backgrounds["ground"]
+
+landscapes = load_landscape()
+ground = landscapes["ground"]
+platforms = landscapes["platforms"]
 
 clouds_offset = 0
 PARALLAX_CLOUDS_SPEED = 0.3
@@ -66,17 +69,15 @@ while running:
     if clouds_offset <= -WIDTH:  # Seamless scrolling
         clouds_offset = 0
 
-    all_sprites.update()
-
+    player.update(platforms)
+    enemies.update()
     player.bullets.update(camera)
-
     enemy.bullets.update(camera)
 
     # Checking and adjusting the player's position
     if player.rect.left < 0:  # The left edge of the screen
         player.rect.left = 0
     if player.rect.right > camera.level_width:  # The right edge of the screen
-
         player.rect.right = camera.level_width
 
     # Checking clashes of player bullets with enemies
@@ -125,10 +126,18 @@ while running:
     screen.blit(trees_background, (trees_offset - trees_width, 0))
     screen.blit(trees_background, (trees_offset, 0))
 
-    ground_width = ground_background.get_width()
+    ground_width = ground.get_width()
     ground_offset = camera.camera.left % ground_width
-    screen.blit(ground_background, (ground_offset - ground_width, 0))
-    screen.blit(ground_background, (ground_offset, 0))
+    screen.blit(ground, (ground_offset - trees_width, 0))
+    screen.blit(ground, (ground_offset, 0))
+
+    # Draw platforms
+    for platform in platforms:
+        sprite_pos = (
+            platform["rect"].x + platform["sprite_offset_x"] + camera.camera.left,
+            platform["rect"].y + platform["sprite_offset_y"] + camera.camera.top
+        )
+        screen.blit(platform["sprite"], sprite_pos)
 
     for sprite in all_sprites:
         if sprite == player:
