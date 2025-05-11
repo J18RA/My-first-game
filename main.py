@@ -1,6 +1,6 @@
 import pygame
 import sys
-from settings import WIDTH, HEIGHT, load_backgrounds, load_landscape
+from settings import WIDTH, HEIGHT, load_backgrounds, load_landscape, load_boxes, BOX_HP
 from player import Player
 from enemies import Enemy
 from camera import Camera
@@ -19,6 +19,8 @@ trees_background = backgrounds["trees"]
 landscapes = load_landscape()
 ground = landscapes["ground"]
 platforms = landscapes["platforms"]
+
+boxes = load_boxes()
 
 clouds_offset = 0
 PARALLAX_CLOUDS_SPEED = 0.3
@@ -69,7 +71,7 @@ while running:
     if clouds_offset <= -WIDTH:  # Seamless scrolling
         clouds_offset = 0
 
-    player.update(platforms)
+    player.update(platforms, boxes)
     enemies.update()
     player.bullets.update(camera)
     enemy.bullets.update(camera)
@@ -87,6 +89,16 @@ while running:
             bullet.kill()  # Remove bullet
             score += 10
 
+    for bullet in player.bullets:
+        # Checking clashes of player bullets with box
+        for box in boxes:
+            if box["active"] and bullet.rect.colliderect(box["rect"]):
+                box["hp"] -= 1
+                bullet.kill()
+                if box["hp"] <= 0:
+                    box["active"] = False
+                break
+
     # Checking the clashes of the enemy bullet with the player
     for bullet in enemy.bullets:
         if pygame.sprite.collide_rect(bullet, player):
@@ -98,7 +110,7 @@ while running:
                     running = False
 
     # Checking the player's clashes with enemies
-    if player.invincible_timer <= 0:  #
+    if player.invincible_timer <= 0:
         hits = pygame.sprite.spritecollide(player, enemies, False)
         if hits:
             player_health -= 10
@@ -138,6 +150,17 @@ while running:
             platform["rect"].y + platform["sprite_offset_y"] + camera.camera.top
         )
         screen.blit(platform["sprite"], sprite_pos)
+
+    # Draw boxes
+    for box in boxes:
+        if box["active"]:
+            sprite_index = BOX_HP - box["hp"]
+            if sprite_index < len(box["sprites"]) and box["sprites"][sprite_index]:
+                sprite_pos = (
+                    box["rect"].x + box["sprite_offset_x"] + camera.camera.left,
+                    box["rect"].y + box["sprite_offset_y"] + camera.camera.top
+                )
+                screen.blit(box["sprites"][sprite_index], sprite_pos)
 
     for sprite in all_sprites:
         if sprite == player:

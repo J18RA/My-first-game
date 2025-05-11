@@ -4,9 +4,6 @@ import pygame
 WIDTH = 800
 HEIGHT = 600
 
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 
 PLAYER_SPEED = 1.1
@@ -32,6 +29,17 @@ PLATFORMS = [
     {"center_x": 450, "center_y": 510, "width": 120, "height": 80},
 ]
 
+BOX_PATH = os.path.join("assets", "level1", "box")
+BOX_STATES = ["box.png", "broken_box1.png", "broken_box2.png", "box_destroyed"]
+BOX_HP = 3
+BOXES = [
+    {"center_x": 600, "center_y": 520, "width": 60, "height": 60},
+    {"center_x": 800, "center_y": 520, "width": 60, "height": 60},
+]
+
+
+"""Load and return sprites."""
+
 
 def load_backgrounds():
     """Load and return all background layers."""
@@ -50,8 +58,6 @@ def load_backgrounds():
 
 
 def load_landscape():
-    """Load and return all landscape layers."""
-
     ground = pygame.image.load(os.path.join(LANDSCAPE_PATH, "ground.png")).convert_alpha()
 
     platforms = []
@@ -81,7 +87,36 @@ def load_landscape():
     }
 
 
-"""Load and return sprites."""
+def load_boxes():
+    boxes_list = []
+    for box_data in BOXES:
+        box_states = []
+        for state in BOX_STATES:
+            if state == "box_destroyed":
+                box_states.append(None)
+            else:
+                state_path = os.path.join(BOX_PATH, state)
+                box_sprite = pygame.image.load(state_path).convert_alpha()
+
+                if box_sprite.get_width() != box_data["width"] or box_sprite.get_height() != box_data["height"]:
+                    box_sprite = pygame.transform.scale(box_sprite, (box_data["width"], box_data["height"]))
+                box_states.append(box_sprite)
+
+        box_rect = pygame.Rect(0, 0, box_data["width"], box_data["height"])
+        box_rect.center = (box_data["center_x"], box_data["center_y"])
+
+        boxes_list.append({
+            "sprites": box_states,
+            "rect": box_rect,
+            "hp": BOX_HP,
+            "sprite_offset_x": (box_data["width"] - box_states[0].get_width()) // 2,
+            "sprite_offset_y": (box_data["height"] - box_states[0].get_height()) // 2,
+            "active": True
+        })
+
+    return boxes_list
+
+
 def load_player():
     frames = []
 

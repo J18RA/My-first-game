@@ -24,17 +24,15 @@ class Player(pygame.sprite.Sprite):
 
         self.weapon_sprites = load_weapon()
         self.current_weapon = "weapon1.png"
-
         self.weapon_image = self.weapon_sprites[self.current_weapon]
         self.weapon_rect = self.weapon_image.get_rect()
-
         self.weapon_offset_x = 15
         self.weapon_offset_y = 32
 
         self.invincible_timer = 0
         self.is_visible = True  # The player's visibility (for blinking)
 
-    def update(self, platforms):
+    def update(self, platforms, boxes):
         # Updating the timer of invulnerability
         if self.invincible_timer > 0:
             self.invincible_timer -= 1
@@ -70,7 +68,22 @@ class Player(pygame.sprite.Sprite):
                     self.velocity_y = 0
                     self.is_jumping = False
 
-        # Collision checking with ground
+        # Check for collisions with boxes
+        for box in boxes:
+            if self.velocity_y > 0:
+                if (self.rect.colliderect(box["rect"]) and
+                        self.rect.bottom <= box["rect"].top + self.velocity_y + 1):
+                    self.rect.bottom = box["rect"].top
+                    self.velocity_y = 0
+                    self.is_jumping = False
+
+            if box["active"] and self.rect.colliderect(box["rect"]):
+                if self.rect.right > box["rect"].left > self.rect.left:
+                    self.rect.right = box["rect"].left
+                elif self.rect.left < box["rect"].right < self.rect.right:
+                    self.rect.left = box["rect"].right
+
+        # Check for collisions with ground
         if self.rect.bottom >= GROUND_LEVEL:
             self.rect.bottom = GROUND_LEVEL
             self.velocity_y = 0
