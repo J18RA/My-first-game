@@ -20,7 +20,6 @@ GROUND_LEVEL = HEIGHT - 50
 
 PLAYER_SPRITES = os.path.join("assets", "player")
 ENEMY_1_SPRITES = os.path.join("assets", "enemies", "enemy_1")
-WEAPON_SPRITES = os.path.join("assets", "weapons")
 
 LEVEL_WIDTH = 3200
 
@@ -37,6 +36,14 @@ BOXES = [
     {"center_x": 800, "center_y": 520, "width": 60, "height": 60},
 ]
 
+WEAPON_PATH = os.path.join("assets", "weapons")
+WEAPONS = [
+    {"name": "weapon1", "sprite": "weapon1.png", "bullet_count": 1, "bullet_angles": [0]},
+    {"name": "weapon2", "sprite": "weapon2.png", "bullet_count": 3, "bullet_angles": [-30, 0, 30]}
+]
+WEAPON_PICKUPS = [
+    {"center_x": 800, "center_y": 520, "weapon_name": "weapon2"}
+]
 
 """Load and return sprites."""
 
@@ -141,8 +148,7 @@ def load_enemy():
 
 def load_weapon():
     weapon_sprites = {}
-    for weapon_name in os.listdir(WEAPON_SPRITES):
-        weapon_path = os.path.join(WEAPON_SPRITES, weapon_name)
-        weapon_sprites[weapon_name] = pygame.image.load(weapon_path).convert_alpha()
-
+    for weapon in WEAPONS:
+        weapon_path = os.path.join("assets", "weapons", weapon["sprite"])
+        weapon_sprites[weapon["name"]] = pygame.image.load(weapon_path).convert_alpha()
     return weapon_sprites

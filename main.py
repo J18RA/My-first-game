@@ -1,7 +1,7 @@
 import pygame
 import sys
-from settings import WIDTH, HEIGHT, load_backgrounds, load_landscape, load_boxes, BOX_HP
-from player import Player
+from settings import WIDTH, HEIGHT, load_backgrounds, load_landscape, load_boxes, BOX_HP, WEAPON_PICKUPS, load_weapon
+from player import Player, WeaponPickup
 from enemies import Enemy
 from camera import Camera
 
@@ -21,6 +21,10 @@ ground = landscapes["ground"]
 platforms = landscapes["platforms"]
 
 boxes = load_boxes()
+
+weapon_sprites = load_weapon()
+weapon_pickups = [WeaponPickup(weapon["center_x"], weapon["center_y"], weapon["weapon_name"], weapon_sprites)
+                  for weapon in WEAPON_PICKUPS]
 
 clouds_offset = 0
 PARALLAX_CLOUDS_SPEED = 0.3
@@ -81,6 +85,11 @@ while running:
         player.rect.left = 0
     if player.rect.right > camera.level_width:  # The right edge of the screen
         player.rect.right = camera.level_width
+
+    for pickup in weapon_pickups[:]:
+        if player.rect.colliderect(pickup.rect):
+            player.equip_weapon(pickup.weapon_name)
+            weapon_pickups.remove(pickup)
 
     # Checking clashes of player bullets with enemies
     for bullet in player.bullets:
@@ -150,6 +159,9 @@ while running:
             platform["rect"].y + platform["sprite_offset_y"] + camera.camera.top
         )
         screen.blit(platform["sprite"], sprite_pos)
+
+    for pickup in weapon_pickups:
+        pickup.draw(screen, camera)
 
     # Draw boxes
     for box in boxes:

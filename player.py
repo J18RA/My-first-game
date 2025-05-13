@@ -1,6 +1,6 @@
 import pygame
 from bullet import Bullet
-from settings import PLAYER_SPEED, GROUND_LEVEL, load_player, load_weapon
+from settings import PLAYER_SPEED, GROUND_LEVEL, load_player, load_weapon, WEAPONS
 
 
 class Player(pygame.sprite.Sprite):
@@ -23,7 +23,8 @@ class Player(pygame.sprite.Sprite):
         self.rect.center = (100, GROUND_LEVEL)
 
         self.weapon_sprites = load_weapon()
-        self.current_weapon = "weapon1.png"
+        self.current_weapon = "weapon1"
+        self.weapon_data = self.get_weapon_data("weapon1")
         self.weapon_image = self.weapon_sprites[self.current_weapon]
         self.weapon_rect = self.weapon_image.get_rect()
         self.weapon_offset_x = 15
@@ -32,7 +33,13 @@ class Player(pygame.sprite.Sprite):
         self.invincible_timer = 0
         self.is_visible = True  # The player's visibility (for blinking)
 
-    def update(self, platforms, boxes):
+    def get_weapon_data(self, weapon_name):
+        for weapon in WEAPONS:
+            if weapon["name"] == weapon_name:
+                return weapon
+        return WEAPONS[0]
+
+    def update(self, platforms, boxes, weapon_pickups=None):
         # Updating the timer of invulnerability
         if self.invincible_timer > 0:
             self.invincible_timer -= 1
@@ -70,6 +77,9 @@ class Player(pygame.sprite.Sprite):
 
         # Check for collisions with boxes
         for box in boxes:
+            if not box["active"]:
+                continue
+
             if self.velocity_y > 0:
                 if (self.rect.colliderect(box["rect"]) and
                         self.rect.bottom <= box["rect"].top + self.velocity_y + 1):
@@ -88,6 +98,13 @@ class Player(pygame.sprite.Sprite):
             self.rect.bottom = GROUND_LEVEL
             self.velocity_y = 0
             self.is_jumping = False  # Player on the ground, the jump is completed
+
+        # Check pickup weapon
+        if weapon_pickups:
+            for pickup in weapon_pickups[:]:
+                if self.rect.colliderect(pickup.rect):
+                    self.equip_weapon(pickup.weapon_name)
+                    weapon_pickups.remove(pickup)
 
         # Animation
         if not self.is_stopped:
@@ -126,17 +143,20 @@ class Player(pygame.sprite.Sprite):
                 )
 
     def draw_weapon(self, screen, camera):
-        if self.current_weapon:
+        if self.current_weapon and self.is_visible:
             weapon_pos = self.weapon_rect.move(camera.camera.topleft)
             screen.blit(self.weapon_image, weapon_pos)
 
     def shoot(self):
-        if self.direction == 1:
-            bullet = Bullet(self.rect.right, self.rect.centery + 5, self.direction)
-        else:
-            bullet = Bullet(self.rect.left, self.rect.centery + 5, self.direction)
-        self.bullets.add(bullet)
-        return bullet
+        bullets = []
+        if self.weapon_data:
+            for angle in self.weapon_data["bullet_angles"]:
+                x = self.rect.right if self.direction == 1 else self.rect.left
+                y = self.rect.centery + 5
+                bullet = Bullet(x, y, self.direction, angle)
+                self.bullets.add(bullet)
+                bullets.append(bullet)
+        return bullets
 
     def jump(self):
         if not self.is_jumping:  # Jump is possible only if a player on earth
@@ -144,5 +164,19 @@ class Player(pygame.sprite.Sprite):
             self.is_jumping = True
 
     def equip_weapon(self, weapon_name):
-        if weapon_name in self.weapon_sprites:
+        if any(w["name"] == weapon_name for w in WEAPONS):
             self.current_weapon = weapon_name
+            self.weapon_data = self.get_weapon_data(weapon_name)
+
+
+class WeaponPickup:
+    def __init__(self, x, y, weapon_name, weapon_sprites):
+        self.rect = pygame.Rect(0, 0, 60, 50)
+        self.rect.center = (x, y)
+        self.weapon_name = weapon_name
+        self.sprite = weapon_sprites[weapon_name]
+        self.sprite = pygame.transform.scale(self.sprite, (60, 60))
+
+    def draw(self, screen, camera):
+        pos = self.rect.move(camera.camera.topleft)
+        screen.blit(self.sprite, pos)
